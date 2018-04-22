@@ -1,0 +1,15 @@
+CMAKE_MINIMUM_REQUIRED(VERSION 2.8.11)
+
+set(TOPDIR ${CMAKE_CURRENT_SOURCE_DIR}/)
+set(OUTDIR ${TOPDIR}/out)
+#set(BUILDDIR ${TOPDIR}/build)
+
+PROJECT(gstreamer_training)
+
+SET(CMAKE_BUILD_TYPE "RelWithDebInfo")
+SET(CMAKE_CXX_FLAGS_DEBUG "-g -Wall")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+
+
+add_subdirectory(src)
+
