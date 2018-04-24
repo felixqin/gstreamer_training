@@ -13,9 +13,16 @@ link_directories(
 add_executable(test_readme test_readme.c)
 
 target_link_libraries(test_readme
-    gstrtspserver-1.0
-    gstreamer-1.0 gobject-2.0 glib-2.0
-    )
+        gstrtspserver-1.0
+        gstreamer-1.0 gobject-2.0 glib-2.0
+        )
+
+add_executable(basic-tutorial-8 basic-tutorial-8.c)
+
+target_link_libraries(basic-tutorial-8
+        gstaudio-1.0
+        gstreamer-1.0 gobject-2.0 glib-2.0
+        )
 
 file(COPY
     ${TOPDIR}/bin/libgstrtspserver-1.0-0.dll
