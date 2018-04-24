@@ -10,9 +10,9 @@ link_directories(
     ${TOPDIR}/lib
 )
 
-add_executable(test_readme test_readme.c)
+add_executable(test-readme test-readme.c)
 
-target_link_libraries(test_readme
+target_link_libraries(test-readme
         gstrtspserver-1.0
         gstreamer-1.0 gobject-2.0 glib-2.0
         )
