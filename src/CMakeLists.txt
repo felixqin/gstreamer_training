@@ -17,6 +17,13 @@ target_link_libraries(test-readme
         gstreamer-1.0 gobject-2.0 glib-2.0
         )
 
+add_executable(test-appsrc test-appsrc.c)
+
+target_link_libraries(test-appsrc
+        gstrtspserver-1.0
+        gstreamer-1.0 gobject-2.0 glib-2.0
+        )
+
 add_executable(basic-tutorial-8 basic-tutorial-8.c)
 
 target_link_libraries(basic-tutorial-8
@@ -51,10 +58,12 @@ file(COPY
     )
 
 file(COPY
+    ${TOPDIR}/lib/gstreamer-1.0/libgstapp.dll
     ${TOPDIR}/lib/gstreamer-1.0/libgstcoreelements.dll
     ${TOPDIR}/lib/gstreamer-1.0/libgstrtp.dll
     ${TOPDIR}/lib/gstreamer-1.0/libgstrtpmanager.dll
     ${TOPDIR}/lib/gstreamer-1.0/libgstudp.dll
+    ${TOPDIR}/lib/gstreamer-1.0/libgstvideoconvert.dll
     ${TOPDIR}/lib/gstreamer-1.0/libgstvideotestsrc.dll
     ${TOPDIR}/lib/gstreamer-1.0/libgstx264.dll
     DESTINATION
