@@ -3,15 +3,25 @@
 #include <stdlib.h>
 #include <gst/gst.h>
 #include <gst/rtsp-server/rtsp-server.h>
+#include "StreamSource.h"
 #include "appsrc_context.h"
 
+
+////////////////////////////////////////////////////////////////////////////////
+
+
+inline IStreamSourcePtr getStreamSource()
+{
+    return IStreamSourcePtr();
+}
+
+////////////////////////////////////////////////////////////////////////////////
 
 typedef struct
 {
     gboolean white;
     GstClockTime timestamp;
 } AppSrcContext;
-
 
 extern "C" void* create_context()
 {
