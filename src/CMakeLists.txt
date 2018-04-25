@@ -10,6 +10,13 @@ link_directories(
     ${TOPDIR}/lib
 )
 
+add_executable(basic-tutorial-8 basic-tutorial-8.c)
+
+target_link_libraries(basic-tutorial-8
+        gstaudio-1.0
+        gstreamer-1.0 gobject-2.0 glib-2.0
+        )
+
 add_executable(test-readme test-readme.c)
 
 target_link_libraries(test-readme
@@ -24,10 +31,10 @@ target_link_libraries(test-appsrc
         gstreamer-1.0 gobject-2.0 glib-2.0
         )
 
-add_executable(basic-tutorial-8 basic-tutorial-8.c)
+add_executable(my_appsrc my_appsrc.c appsrc_context.cpp)
 
-target_link_libraries(basic-tutorial-8
-        gstaudio-1.0
+target_link_libraries(my_appsrc
+        gstrtspserver-1.0
         gstreamer-1.0 gobject-2.0 glib-2.0
         )
 
