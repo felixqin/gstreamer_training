@@ -10,55 +10,71 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 
+IStreamSourcePtr getRawStreamSource();
+
 inline IStreamSourcePtr getStreamSource()
 {
-    return IStreamSourcePtr();
+    return getRawStreamSource();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-typedef struct
+template <class T>
+inline void default_delete(void* ptr)
 {
-    gboolean white;
-    GstClockTime timestamp;
-} AppSrcContext;
+    auto p = static_cast<T*>(ptr);
+    delete p;
+}
+
+inline GstBuffer* create_buffer(IStreamSource::Frame const& frame)
+{
+    return gst_buffer_new_wrapped_full(
+        GST_MEMORY_FLAG_READONLY,
+        frame.data.get(), frame.size, 0, frame.size,
+        new std::shared_ptr<uint8_t>(frame.data), default_delete<std::shared_ptr<uint8_t>>
+    );
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+struct AppSrcContext
+{
+    GstElement* appsrc;
+    IStreamSourcePtr stream;
+};
 
 extern "C" void* create_context()
 {
-    AppSrcContext* ctx = (AppSrcContext*)malloc(sizeof(AppSrcContext));
-    ctx->white = FALSE;
-    ctx->timestamp = 0;
+    auto ctx = new AppSrcContext();
+    ctx->appsrc = nullptr;
     return ctx;
 }
 
 extern "C" void destroy_context(void* data)
 {
-    AppSrcContext* ctx = (AppSrcContext*)data;
-    free(ctx);
+    auto ctx = (AppSrcContext*)data;
+    delete ctx;
+}
+
+static void on_stream(AppSrcContext* ctx, IStreamSource::Frame const& frame)
+{
+    auto buffer = create_buffer(frame);
+
+    /* increment the timestamp every 1/2 second */
+    GST_BUFFER_PTS (buffer) = frame.pts * 1000; // ns
+    GST_BUFFER_DURATION (buffer) = frame.duration * 1000;
+
+    GstFlowReturn ret = GST_FLOW_OK;
+    g_signal_emit_by_name (ctx->appsrc, "push-buffer", buffer, &ret);
 }
 
 /* called when we need to give data to appsrc */
 extern "C" void need_data (GstElement * appsrc, guint unused, void* data)
 {
-    GstBuffer *buffer;
-    guint size;
-    GstFlowReturn ret;
-    AppSrcContext* ctx = (AppSrcContext*)data;
-
-    size = 385 * 288 * 2;
-
-    buffer = gst_buffer_new_allocate (NULL, size, NULL);
-
-    /* this makes the image black/white */
-    gst_buffer_memset (buffer, 0, ctx->white ? 0xf0 : 0x0f, size);
-
-    ctx->white = !ctx->white;
-
-    /* increment the timestamp every 1/2 second */
-    GST_BUFFER_PTS (buffer) = ctx->timestamp;
-    GST_BUFFER_DURATION (buffer) = gst_util_uint64_scale_int (1, GST_SECOND, 2);
-    ctx->timestamp += GST_BUFFER_DURATION (buffer);
-
-    g_signal_emit_by_name (appsrc, "push-buffer", buffer, &ret);
+    auto ctx = (AppSrcContext*)data;
+    ctx->appsrc = appsrc;
+    ctx->stream->start([ctx](IStreamSource::Frame const& frame){
+        on_stream(ctx, frame);
+    });
 }
 

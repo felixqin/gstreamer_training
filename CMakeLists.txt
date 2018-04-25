@@ -8,7 +8,7 @@ PROJECT(gstreamer_training)
 
 SET(CMAKE_BUILD_TYPE "RelWithDebInfo")
 SET(CMAKE_CXX_FLAGS_DEBUG "-g -Wall")
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
 
 
 add_subdirectory(src)
