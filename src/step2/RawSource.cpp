@@ -47,7 +47,11 @@ private:
     {
         int w = 384, h = 288;
         auto bytes = w * h * 2;
-        mFrame = Frame{std::shared_ptr<uint8_t>((uint8_t*)malloc(bytes), free), bytes, 0};
+        mFrame = Frame{
+            std::shared_ptr<uint8_t>((uint8_t*)malloc((size_t)bytes), free),
+            (size_t)bytes,
+            0
+        };
     }
 
     void threadProc()
@@ -56,7 +60,7 @@ private:
 
         while (!mExitFlag)
         {
-            LOGI("CRawThread::threadProc() loop\n");
+            LOGI("CRawThread::threadProc() loop! color(%02x)\n", mColor);
 
             auto now = GetTickCount();
             memset(mFrame.data.get(), mColor, mFrame.size);

@@ -52,7 +52,9 @@ static void media_configure (GstRTSPMediaFactory * factory, GstRTSPMedia * media
                             (GDestroyNotify) destroy_context);
 
     /* install the callback that will be called when a buffer is needed */
-    g_signal_connect (appsrc, "need-data", (GCallback) need_data, ctx);
+    g_signal_connect (appsrc, "need-data", G_CALLBACK(start_feed), ctx);
+    g_signal_connect (appsrc, "enough-data", G_CALLBACK(stop_feed), ctx);
+
     gst_object_unref (appsrc);
     gst_object_unref (element);
 }
