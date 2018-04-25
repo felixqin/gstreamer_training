@@ -42,4 +42,5 @@ file(COPY
 
 add_subdirectory(step0)
 add_subdirectory(step1)
+add_subdirectory(step2)
 
