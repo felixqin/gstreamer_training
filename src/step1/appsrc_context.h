@@ -7,10 +7,9 @@ extern "C" {
 
 
 void* create_context();
-
 void destroy_context(void*);
-
 void need_data (GstElement*, guint, void*);
+void enough_data (GstElement*, guint, void*);
 
 #ifdef __cplusplus
 };  // extern "C"

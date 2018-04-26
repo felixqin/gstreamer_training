@@ -1,5 +1,6 @@
 
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <gst/gst.h>
 #include <gst/rtsp-server/rtsp-server.h>
@@ -35,6 +36,8 @@ extern "C" void need_data (GstElement * appsrc, guint unused, void* data)
     GstFlowReturn ret;
     AppSrcContext* ctx = (AppSrcContext*)data;
 
+    printf("need_data() ctx(%p)\n", ctx);
+
     size = 385 * 288 * 2;
 
     buffer = gst_buffer_new_allocate (NULL, size, NULL);
@@ -48,7 +51,12 @@ extern "C" void need_data (GstElement * appsrc, guint unused, void* data)
     GST_BUFFER_PTS (buffer) = ctx->timestamp;
     GST_BUFFER_DURATION (buffer) = gst_util_uint64_scale_int (1, GST_SECOND, 2);
     ctx->timestamp += GST_BUFFER_DURATION (buffer);
+    //printf("need data pts(%llu) duration(%llu)\n", GST_BUFFER_PTS(buffer), GST_BUFFER_DURATION(buffer));
 
     g_signal_emit_by_name (appsrc, "push-buffer", buffer, &ret);
 }
 
+extern "C" void enough_data (GstElement*, guint, void* ctx)
+{
+    printf("enough_data() ctx(%p)\n", ctx);
+}

@@ -1,8 +1,9 @@
 
 
 #include <stdlib.h>
+#include <mutex>
+#include <deque>
 #include <gst/gst.h>
-#include <gst/rtsp-server/rtsp-server.h>
 #include "StreamSource.h"
 #include "appsrc_context.h"
 
@@ -32,7 +33,7 @@ inline void default_delete(void* ptr)
 inline GstBuffer* create_buffer(IStreamSource::Frame const& frame)
 {
     return gst_buffer_new_wrapped_full(
-        GST_MEMORY_FLAG_READONLY,
+            GstMemoryFlags(0), //GST_MEMORY_FLAG_READONLY,
         frame.data.get(), frame.size, 0, frame.size,
         new std::shared_ptr<uint8_t>(frame.data), default_delete<std::shared_ptr<uint8_t>>
     );
@@ -43,13 +44,18 @@ inline GstBuffer* create_buffer(IStreamSource::Frame const& frame)
 struct AppSrcContext
 {
     GstElement* appsrc;
+    guint sourceid;
     IStreamSourcePtr stream;
+
+    std::mutex mtx;
+    std::deque<IStreamSource::Frame> frame_queue;
 };
 
 extern "C" void* create_context()
 {
     auto ctx = new AppSrcContext();
     ctx->appsrc = nullptr;
+    ctx->sourceid = 0;
     return ctx;
 }
 
@@ -61,38 +67,81 @@ extern "C" void destroy_context(void* data)
 
 static void on_stream(AppSrcContext* ctx, IStreamSource::Frame const& frame)
 {
-    auto buffer = create_buffer(frame);
+    std::lock_guard<std::mutex> lock(ctx->mtx);
+    ctx->frame_queue.push_back(frame);
+}
+
+extern "C" gboolean on_push_data(gpointer data)
+{
+    auto ctx = (AppSrcContext*)data;
+
+    /*
+    IStreamSource::Frame frame;
+    {
+        std::lock_guard<std::mutex> lock(ctx->mtx);
+        if (ctx->frame_queue.empty())
+        {
+            //LOGI("frame queue is empty!\n");
+            return TRUE;
+        }
+
+        frame = ctx->frame_queue.front();
+        ctx->frame_queue.pop_front();
+    }
+     */
+
+    //auto buffer = create_buffer(frame);
+    auto size = 385 * 288 * 2;
+    auto buffer = gst_buffer_new_allocate (NULL, size, NULL);
+    gst_buffer_memset (buffer, 0, 0xf0, size);
 
     /* increment the timestamp every 1/2 second */
-    GST_BUFFER_PTS (buffer) = frame.pts * 1000; // ns
-    GST_BUFFER_DURATION (buffer) = frame.duration * 1000;
+    static uint64_t pts = 0;
+    GST_BUFFER_PTS (buffer) = pts*1000*1000; //frame.pts * 1000000; // ns
+    GST_BUFFER_DURATION (buffer) = 500*1000*1000;//frame.duration * 1000000;
+    pts += 500;
 
     GstFlowReturn ret = GST_FLOW_OK;
-    g_signal_emit_by_name (ctx->appsrc, "push-buffer", buffer, &ret);
+    //LOGI("to push buffer!\n");
+    g_signal_emit_by_name(ctx->appsrc, "push-buffer", buffer, &ret);
     LOGI("push buffer! ret(%d)\n", ret);
+
+    gst_buffer_unref(buffer);
+
+    if (ret != GST_FLOW_OK) {
+        /* We got some error, stop sending data */
+        return FALSE;
+    }
+
+    return TRUE;
 }
 
 /* called when we need to give data to appsrc */
-extern "C" void start_feed(GstElement* appsrc, guint unused, void* data)
+extern "C" void start_feed(GstElement* appsrc, guint, void* data)
 {
-    LOGI("start_feed\n");
+    LOGI("start_feed appsrc(%p) data(%p)\n", appsrc, data);
     auto ctx = (AppSrcContext*)data;
-    if (!ctx->stream)
+    if (ctx->sourceid == 0)
     {
+        ctx->sourceid = g_idle_add((GSourceFunc)on_push_data, ctx);
         ctx->appsrc = appsrc;
         ctx->stream = getRawStreamSource();
-        ctx->stream->start([ctx](IStreamSource::Frame const& frame) {
-            on_stream(ctx, frame);
-        });
+        //ctx->stream->start([ctx](IStreamSource::Frame const& frame) {
+            //on_stream(ctx, frame);
+        //});
     }
+
+    //on_push_data(ctx);
 }
 
-extern "C" void stop_feed(GstElement* appsrc, guint unused, void* data)
+extern "C" void stop_feed(GstElement* appsrc, guint, void* data)
 {
-    LOGI("stop_feed\n");
+    LOGI("stop_feed appsrc(%p) data(%p)\n", appsrc, data);
     auto ctx = (AppSrcContext*)data;
-    if (ctx->stream)
+    if (ctx->sourceid != 0)
     {
+        g_source_remove (ctx->sourceid);
+        ctx->sourceid = 0;
         ctx->stream->stop();
         ctx->stream.reset();
     }

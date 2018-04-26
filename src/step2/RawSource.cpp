@@ -58,13 +58,14 @@ private:
     {
         LOGI("CRawThread::threadProc() begin\n");
 
+        uint64_t pts = 0;
         while (!mExitFlag)
         {
             LOGI("CRawThread::threadProc() loop! color(%02x)\n", mColor);
 
-            auto now = GetTickCount();
+            //auto now = GetTickCount();
             memset(mFrame.data.get(), mColor, mFrame.size);
-            mFrame.pts = now;
+            mFrame.pts = pts;
             mFrame.duration = 500;
             if (mColor == 0)
             {
@@ -81,6 +82,7 @@ private:
 
             mCallback(mFrame);
 
+            pts += 500;
             usleep(500*1000);
         }
 

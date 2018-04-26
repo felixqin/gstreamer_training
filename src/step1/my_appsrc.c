@@ -44,7 +44,7 @@ static void media_configure (GstRTSPMediaFactory * factory, GstRTSPMedia * media
                                        "format", G_TYPE_STRING, "RGB16",
                                        "width", G_TYPE_INT, 384,
                                        "height", G_TYPE_INT, 288,
-                                       "framerate", GST_TYPE_FRACTION, 0, 1, NULL), NULL);
+                                       /*"framerate", GST_TYPE_FRACTION, 0, 1,*/ NULL), NULL);
 
     ctx = create_context();
     /* make sure ther datais freed when the media is gone */
@@ -53,6 +53,7 @@ static void media_configure (GstRTSPMediaFactory * factory, GstRTSPMedia * media
 
     /* install the callback that will be called when a buffer is needed */
     g_signal_connect (appsrc, "need-data", (GCallback) need_data, ctx);
+    g_signal_connect (appsrc, "enough-data", G_CALLBACK(enough_data), ctx);
     gst_object_unref (appsrc);
     gst_object_unref (element);
 }
