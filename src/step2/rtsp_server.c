@@ -25,9 +25,10 @@
 /* called when a new media pipeline is constructed. We can query the
  * pipeline and configure our appsrc */
 static void media_configure (GstRTSPMediaFactory * factory, GstRTSPMedia * media,
-                 gpointer ctx)
+                 gpointer data)
 {
     GstElement *element, *appsrc;
+    void *ctx;
 
     /* get the element used for providing the streams of the media */
     element = gst_rtsp_media_get_element (media);
@@ -46,6 +47,7 @@ static void media_configure (GstRTSPMediaFactory * factory, GstRTSPMedia * media
                                        "height", G_TYPE_INT, 288,
                                        /*"framerate", GST_TYPE_FRACTION, 0, 1,*/ NULL), NULL);
 
+    ctx = create_context(appsrc);
     /* make sure ther datais freed when the media is gone */
     g_object_set_data_full (G_OBJECT (media), "my-extra-data", ctx,
                             (GDestroyNotify) destroy_context);
@@ -60,14 +62,12 @@ static void media_configure (GstRTSPMediaFactory * factory, GstRTSPMedia * media
 
 int rtsp_server_main (int argc, char *argv[])
 {
-    void *ctx;
     GMainLoop *loop;
     GstRTSPServer *server;
     GstRTSPMountPoints *mounts;
     GstRTSPMediaFactory *factory;
 
     gst_init (&argc, &argv);
-    ctx = create_context();
 
     loop = g_main_loop_new (NULL, FALSE);
 
@@ -88,7 +88,7 @@ int rtsp_server_main (int argc, char *argv[])
 
     /* notify when our media is ready, This is called whenever someone asks for
      * the media and a new pipeline with our appsrc is created */
-    g_signal_connect (factory, "media-configure", (GCallback) media_configure, ctx);
+    g_signal_connect (factory, "media-configure", (GCallback) media_configure, NULL);
 
     /* attach the test factory to the /test url */
     gst_rtsp_mount_points_add_factory (mounts, "/test", factory);
@@ -103,6 +103,5 @@ int rtsp_server_main (int argc, char *argv[])
     g_print ("stream ready at rtsp://127.0.0.1:8554/test\n");
     g_main_loop_run (loop);
 
-    destroy_context(ctx);
     return 0;
 }

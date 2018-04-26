@@ -15,6 +15,6 @@ aux_source_directory(./ SRC_FILES)
 add_executable(raw_rtsp ${SRC_FILES})
 
 target_link_libraries(raw_rtsp
-        gstrtspserver-1.0
+        gstrtspserver-1.0 gstapp-1.0
         gstreamer-1.0 gobject-2.0 glib-2.0
         )

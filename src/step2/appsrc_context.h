@@ -6,10 +6,10 @@ extern "C" {
 #endif
 
 
-void* create_context();
+void* create_context(GstElement*);
 void destroy_context(void*);
-void start_feed(GstElement*, guint, void*);
-void stop_feed(GstElement*, guint, void*);
+void start_feed(GstElement*, guint length, void*);
+void stop_feed(GstElement*, void*);
 
 #ifdef __cplusplus
 };  // extern "C"

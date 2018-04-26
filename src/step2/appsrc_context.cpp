@@ -4,6 +4,7 @@
 #include <mutex>
 #include <deque>
 #include <gst/gst.h>
+#include <gst/app/gstappsrc.h>
 #include "StreamSource.h"
 #include "appsrc_context.h"
 
@@ -43,7 +44,7 @@ inline GstBuffer* create_buffer(IStreamSource::Frame const& frame)
 
 struct AppSrcContext
 {
-    GstElement* appsrc;
+    GstAppSrc* appsrc;
     guint sourceid;
     IStreamSourcePtr stream;
 
@@ -51,10 +52,10 @@ struct AppSrcContext
     std::deque<IStreamSource::Frame> frame_queue;
 };
 
-extern "C" void* create_context()
+extern "C" void* create_context(GstElement* appsrc)
 {
     auto ctx = new AppSrcContext();
-    ctx->appsrc = nullptr;
+    ctx->appsrc = (GstAppSrc*)appsrc;
     ctx->sourceid = 0;
     return ctx;
 }
@@ -101,12 +102,10 @@ extern "C" gboolean on_push_data(gpointer data)
     GST_BUFFER_DURATION (buffer) = 500*1000*1000;//frame.duration * 1000000;
     pts += 500;
 
-    GstFlowReturn ret = GST_FLOW_OK;
     //LOGI("to push buffer!\n");
-    g_signal_emit_by_name(ctx->appsrc, "push-buffer", buffer, &ret);
+    //g_signal_emit_by_name(ctx->appsrc, "push-buffer", buffer, &ret);
+    GstFlowReturn ret = gst_app_src_push_buffer(ctx->appsrc, buffer);
     LOGI("push buffer! ret(%d)\n", ret);
-
-    gst_buffer_unref(buffer);
 
     if (ret != GST_FLOW_OK) {
         /* We got some error, stop sending data */
@@ -117,30 +116,27 @@ extern "C" gboolean on_push_data(gpointer data)
 }
 
 /* called when we need to give data to appsrc */
-extern "C" void start_feed(GstElement* appsrc, guint, void* data)
+extern "C" void start_feed(GstElement* appsrc, guint length, void* data)
 {
-    LOGI("start_feed appsrc(%p) data(%p)\n", appsrc, data);
+    LOGI("start_feed appsrc(%p) length(%d) data(%p)\n", appsrc, length, data);
     auto ctx = (AppSrcContext*)data;
     if (ctx->sourceid == 0)
     {
         ctx->sourceid = g_idle_add((GSourceFunc)on_push_data, ctx);
-        ctx->appsrc = appsrc;
         ctx->stream = getRawStreamSource();
         //ctx->stream->start([ctx](IStreamSource::Frame const& frame) {
             //on_stream(ctx, frame);
         //});
     }
-
-    //on_push_data(ctx);
 }
 
-extern "C" void stop_feed(GstElement* appsrc, guint, void* data)
+extern "C" void stop_feed(GstElement* appsrc, void* data)
 {
     LOGI("stop_feed appsrc(%p) data(%p)\n", appsrc, data);
     auto ctx = (AppSrcContext*)data;
     if (ctx->sourceid != 0)
     {
-        g_source_remove (ctx->sourceid);
+        g_source_remove(ctx->sourceid);
         ctx->sourceid = 0;
         ctx->stream->stop();
         ctx->stream.reset();
