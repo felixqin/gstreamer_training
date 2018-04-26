@@ -138,7 +138,7 @@ extern "C" void stop_feed(GstElement* appsrc, void* data)
     {
         g_source_remove(ctx->sourceid);
         ctx->sourceid = 0;
-        ctx->stream->stop();
+        //ctx->stream->stop();
         ctx->stream.reset();
     }
 }
