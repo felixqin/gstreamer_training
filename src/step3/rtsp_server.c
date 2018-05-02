@@ -32,6 +32,7 @@ typedef struct
     GstAppSrc* appsrc;
     guint sourceid;
     void* stream;
+    GstClock* clock;
 } MediaContext;
 
 
@@ -41,11 +42,18 @@ static void* create_context(GstElement* appsrc)
     ctx->appsrc = (GstAppSrc*)appsrc;
     ctx->sourceid = 0;
     ctx->stream = NULL;
+    ctx->clock = NULL;
     return ctx;
 }
 
 static void destroy_context(MediaContext* ctx)
 {
+    if (ctx->clock)
+    {
+        g_object_unref(clock);
+        ctx->clock = NULL;
+    }
+
     if (ctx->sourceid != 0)
     {
         g_source_remove(ctx->sourceid);
@@ -63,6 +71,12 @@ static void destroy_context(MediaContext* ctx)
 
 static gboolean on_push_data(MediaContext* ctx)
 {
+    if (!ctx->clock)
+    {
+        ctx->clock = gst_element_get_clock((GstElement*)ctx->appsrc);
+        LOGI("clock(%p)\n", ctx->clock);
+    }
+
     GstBuffer* buffer = frame_source_get_frame(ctx->stream);
     if (!buffer)
     {
