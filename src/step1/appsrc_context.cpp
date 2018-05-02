@@ -36,7 +36,12 @@ extern "C" void need_data (GstElement * appsrc, guint unused, void* data)
     GstFlowReturn ret;
     AppSrcContext* ctx = (AppSrcContext*)data;
 
-    printf("need_data() ctx(%p)\n", ctx);
+    auto clock = gst_element_get_clock(appsrc);
+    auto abs_time = (clock) ? gst_clock_get_time(clock) : 0;
+    auto base_time = gst_element_get_base_time(appsrc);
+    auto running_time = abs_time - base_time;
+    if (clock) g_object_unref(clock);
+    printf("need_data() ctx(%p) clock(%p) abs_time(%llu) base_time(%llu)\n", ctx, clock, abs_time, base_time);
 
     size = 385 * 288 * 2;
 
@@ -50,8 +55,10 @@ extern "C" void need_data (GstElement * appsrc, guint unused, void* data)
     /* increment the timestamp every 1/2 second */
     GST_BUFFER_PTS (buffer) = ctx->timestamp;
     GST_BUFFER_DURATION (buffer) = gst_util_uint64_scale_int (1, GST_SECOND, 2);
+    //if (ctx->timestamp != 0) { GST_BUFFER_PTS(buffer) = -1; }
+    GST_BUFFER_PTS(buffer) = running_time;
     ctx->timestamp += GST_BUFFER_DURATION (buffer);
-    //printf("need data pts(%llu) duration(%llu)\n", GST_BUFFER_PTS(buffer), GST_BUFFER_DURATION(buffer));
+    printf("need data pts(%llu) duration(%llu)\n", GST_BUFFER_PTS(buffer), GST_BUFFER_DURATION(buffer));
 
     g_signal_emit_by_name (appsrc, "push-buffer", buffer, &ret);
 }
