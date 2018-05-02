@@ -87,16 +87,16 @@ static gboolean on_push_data(MediaContext* ctx)
 static void start_feed(GstElement* appsrc, guint length, MediaContext* ctx)
 {
     LOGI("start_feed appsrc(%p) length(%d) ctx(%p)\n", appsrc, length, ctx);
-    if (ctx->sourceid == 0)
-    {
-        ctx->sourceid = g_idle_add((GSourceFunc)on_push_data, ctx);
-        LOGI("ctx sourceid(%d)\n", ctx->sourceid);
-    }
-
     if (!ctx->stream)
     {
         ctx->stream = create_frame_source();
         frame_source_start(ctx->stream);
+    }
+
+    if (ctx->sourceid == 0)
+    {
+        ctx->sourceid = g_idle_add((GSourceFunc)on_push_data, ctx);
+        LOGI("ctx sourceid(%d)\n", ctx->sourceid);
     }
 }
 

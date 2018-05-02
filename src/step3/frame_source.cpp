@@ -25,20 +25,30 @@ public:
     bool start()
     {
         LOGI("CRawThread::start()\n");
-        mExitFlag = false;
-        mThread = std::make_unique<std::thread>([this](){
-            threadProc();
-        });
-        return true;
+        if (!mThread)
+        {
+            mExitFlag = false;
+            mThread = std::make_unique<std::thread>([this]() {
+                threadProc();
+            });
+            return true;
+        }
+
+        return false;
     }
 
     bool stop()
     {
         LOGI("CRawThread::stop()\n");
-        mExitFlag = true;
-        mThread->join();
-        mThread.reset();
-        return true;
+        if (mThread)
+        {
+            mExitFlag = true;
+            mThread->join();
+            mThread.reset();
+            return true;
+        }
+
+        return false;
     }
 
     GstBuffer* getFrame()
@@ -122,18 +132,18 @@ extern "C" void destroy_frame_source(void* handle)
 extern "C" void frame_source_start(void* handle)
 {
     auto source = (CFrameSource*)handle;
-    source->start();
+    if (source) { source->start(); }
 }
 
 extern "C" void frame_source_stop(void* handle)
 {
     auto source = (CFrameSource*)handle;
-    source->stop();
+    if (source) { source->stop(); }
 }
 
 extern "C" GstBuffer* frame_source_get_frame(void* handle)
 {
     auto source = (CFrameSource*)handle;
-    return source->getFrame();
+    return source ? source->getFrame() : nullptr;
 }
 
